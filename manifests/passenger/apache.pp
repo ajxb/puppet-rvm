@@ -83,22 +83,34 @@ class rvm::passenger::apache(
     'debian','redhat': {
       case $facts['os']['family'] {
         'redhat': {
-          $apache_mods_path = '/etc/httpd/conf.d'
+          case $facts['os']['release']['major'] {
+            '7': {
+              $apache_mods_path = '/etc/httpd/conf.modules.d'
+              $apache_mods_tgt_path = '/etc/httpd/conf.d'
+            }
+            default: {
+              $apache_mods_path = '/etc/httpd/conf.d'
+              $apache_mods_tgt_path = '/etc/httpd/conf.d'
+            }
+          }
         }
         'debian': {
           $apache_mods_path = '/etc/apache2/mods-available'
+          $apache_mods_tgt_path = '/etc/apache2/mods-available'
         }
         default: {
           $apache_mods_path = '/etc/httpd/conf.d'
+          $apache_mods_tgt_path = '/etc/httpd/conf.d'
         }
       }
       exec { 'copy passenger_extra.conf to passenger.conf':
-        command     => "/bin/cp ${apache_mods_path}/passenger_extra.conf ${apache_mods_path}/passenger.conf",
-        unless      => "/usr/bin/diff ${apache_mods_path}/passenger_extra.conf ${apache_mods_path}/passenger.conf",
+        command     => "/bin/cp ${apache_mods_path}/passenger_extra.conf ${apache_mods_tgt_path}/passenger.conf",
+        unless      => "/usr/bin/diff ${apache_mods_path}/passenger_extra.conf ${apache_mods_tgt_path}/passenger.conf",
         onlyif      => "test -f ${apache_mods_path}/passenger_extra.conf",
         environment => [ 'HOME=/root', ],
         path        => '/usr/bin:/usr/sbin:/bin',
         require     => Class['apache::mod::passenger'],
+        notify      => Service['httpd'],
       }
     }
     default: {}
